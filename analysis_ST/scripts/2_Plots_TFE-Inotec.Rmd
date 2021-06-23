@@ -1,0 +1,250 @@
+---
+title: "Plots_TFE-Inotec"
+author: "Ivan Calandra & Lisa Schunk"
+date: "`r Sys.time()`"
+output: word_document
+---
+
+```{r Knitr Options, include=FALSE}
+knitr::opts_chunk$set(comment=NA, message=FALSE, indent="", error=TRUE)
+```
+
+
+# Goal of the script
+This script plots sensor data in order to visualize the measurements 
+recorded throughout the tool function experiment.  
+Variables of interest are: 
+* Penetration depth 
+
+
+
+```{r}
+dir_in <- "analysis_ST/derived_data/"
+dir_out <- "analysis_ST/plots"
+
+```
+
+Raw data must be located in `r paste0("~/", dir_in)`.  
+Formatted data will be saved in `r paste0("~/", dir_out)`.
+The knit directory for this script is the project directory.
+
+---
+
+
+# Load packages
+```{r}
+library(R.utils)
+library(ggplot2)
+library(tools)
+library(tidyverse)
+library(patchwork)
+library(doBy)
+library(ggrepel)
+library(openxlsx)
+
+```
+
+
+---
+
+# Get name, path and information of the file 
+```{r}
+data_file <- list.files(dir_in, pattern = "\\.xlsx$", full.names = TRUE)
+md5_in <- md5sum(data_file)
+info_in <- data.frame(file = basename(names(md5_in)), checksum = md5_in, row.names = NULL)
+
+```
+
+
+The checksum (MD5 hashes) of the imported file is:  
+```{r, echo = FALSE}
+info_in
+
+```
+
+
+# Load data into R object
+```{r}
+imp_data <- read.xlsx(data_file)
+str(imp_data)
+
+```
+
+The imported file is: "`r paste0("~/", data_file)`"  
+
+
+
+# Plot each of the selected numeric variable 
+## Plots showing the strokes as lines 
+```{r}
+
+filter(imp_data, Sample == "FLT8-4" | Stroke == "243")
+
+# plots all 2000 strokes per sample divided by 40 
+# splits the data in the individual 24 samples
+sp <- split(imp_data, imp_data[["Sample"]])
+
+
+for (i in seq_along(sp)) {
+  # creates a sequence of every ~ 50th strokes 
+  seq_st <- seq(1, length(unique(sp[[i]][["Stroke"]])), by = 40) %>% 
+            c(max(unique(sp[[i]][["Stroke"]])))
+  dat_i_all <- sp[[i]] %>% 
+               filter(Stroke %in% seq_st)
+  range_depth <- range(dat_i_all[["Depth"]])
+  p1 <- ggplot(data = dat_i_all, aes(x = Step, y = Depth, colour = Stroke)) +
+        geom_line(aes(group = Stroke), alpha = 0.3) + 
+        labs(x = "Step", y = "Depth (mm)") + ylab(NULL) +
+        # reverses the legend starting with 0 going to 2000 strokes    
+        scale_colour_continuous(trans = "reverse") + 
+        coord_cartesian(ylim = range_depth) +
+        # changes the 'Step-number' in the x-legend  
+        scale_x_continuous(breaks=c(1, 4, 7, 10)) +
+	      theme_classic()
+       
+# plots only the first 50 strokes per sample  
+  dat_i_50 <- sp[[i]] %>% 
+              # takes only the first 50 strokes per sample
+              filter(Stroke %in% 1:50)
+  p2 <- ggplot(data = dat_i_50) +
+        geom_line(aes(x = Step, y = Depth, colour = Stroke, group = Stroke), alpha = 0.3) + 
+        labs(x = "Step", y = "Depth (mm)") + 
+        scale_colour_continuous(trans = "reverse") + 
+        coord_cartesian(ylim = range_depth) +
+        scale_x_continuous(breaks=c(1, 4, 7, 10)) +
+	      theme_classic()
+  # patchwork plot
+  p <- p2 + p1 + plot_annotation(title = names(sp)[i]) 
+  print(p)
+
+  # save to PDF
+  file_out <- paste0(file_path_sans_ext(info_in[["file"]]), "_plot_", 
+	                   names(sp)[i], ".pdf")
+  ggsave(filename = file_out, plot = p, path = dir_out, device = "pdf")
+} 
+
+```
+
+
+
+## Plots showing the absolut penetration depths 
+### Plot of all samples 
+```{r}
+
+# calculates the absolute depths reached per sample
+abs.depth <- function(x) {
+  no.na <- x[!is.na(x)]
+  out <- abs(min(no.na) - max(no.na))
+  return(out)
+}
+
+# Define grouping variable and compute the summary statistics 
+depth <- summaryBy(Depth ~ Sample+Angle+Task+Raw_material, 
+                  data=imp_data, 
+                  FUN=abs.depth)
+
+str(depth)
+
+# colour 
+depth[["Raw_material"]] <- factor(depth[["Raw_material"]])
+#Royal1 = c("#899DA4", "#C93312", "#FAEFD1", "#DC863B")
+custom.col7 <- data.frame(type = levels(depth$Raw_material), 
+                           col = c("#899DA4", "#DC863B")) 
+depth$col <- custom.col7[depth$Raw_material, "col"]
+
+
+# plots all depth points in one facet plot 
+p3 <- ggplot(data = depth, aes(x = Angle, y = Depth.abs.depth, colour = Raw_material)) +
+       geom_point() + labs(y = "Absolute depth (mm)") +
+       facet_wrap(~Task, strip.position = "bottom") +
+       # avoids overplotting of the labels (sample IDs)
+       geom_text_repel(aes(label=Sample), size = 2, nudge_x = -0.4, 
+                       segment.size = 0.1, force = 2, seed = 123) +
+       scale_y_continuous(trans = "reverse") +
+       scale_x_discrete(position="top") +
+       # removes the "_" between "Raw_material in the legend 
+	     labs(colour = gsub("_", " ", "Raw_material")) + 
+       scale_colour_manual(values = custom.col7$col) + 
+	     theme_classic()
+print(p3)
+
+# save to PDF
+file_out <- paste0(file_path_sans_ext(info_in[["file"]]), "_P3_depth_plot", ".pdf")
+ggsave(filename = file_out, plot = p3, path = dir_out, device = "pdf", 
+       width = 180, units = "mm")
+
+
+```
+
+### Plot of all samples except the three outliers 
+```{r}
+# defines the three outliers/bad samples
+bad_samples <- c("FLT8-3", "FLT8-4", "FLT8-10")
+# creates data frames without the outliers
+imp_data_good <- imp_data[!imp_data$Sample %in% bad_samples, ]
+# splits the data in the individual 21 samples
+sp_good <- split(imp_data_good, imp_data_good[["Sample"]])
+
+
+# calculates the absolute depths reached per sample
+abs.depth <- function(x) {
+  out <- abs(min(x) - max(x))
+}
+
+# Define grouping variable and compute the summary statistics 
+depth_good <- summaryBy(Depth ~ Sample + Angle + Task + Raw_material, data = imp_data_good, 
+                  FUN = abs.depth)
+
+str(depth_good)
+
+# plots all depth points in one facet plot 
+p4 <- ggplot(data = depth_good, aes(x = Angle, y = Depth.abs.depth, 
+                                    colour = Raw_material)) +
+       geom_point() + labs(y = "Absolute depth (mm)") +
+       facet_wrap(~Task, strip.position = "bottom") +
+       geom_text_repel(aes(label=Sample), size = 2, 
+                       nudge_x = -0.4, segment.size = 0.1, force = 2, seed = 123) +
+       scale_y_continuous(trans = "reverse") +
+       scale_x_discrete(position="top") +
+       # removes the "_" between "Raw_material in the legend 
+	     labs(colour = gsub("_", " ", "Raw_material")) + 
+       scale_colour_manual(values = custom.col7$col) + 
+	     theme_classic()
+print(p4)
+
+# save to PDF
+file_out <- paste0(file_path_sans_ext(info_in[["file"]]), "_P4_depth_plot", ".pdf")
+ggsave(filename = file_out, plot = p4, path = dir_out, device = "pdf", 
+       width = 180, units = "mm")
+
+```
+
+The files will be saved as "`r paste0("~/", dir_out, ".[ext]")`".
+
+---
+# Save data
+## Write to XLSX (summary statistics)
+```{r}
+write.xlsx(list(depth = depth, depth_good = depth_good), 
+           file = paste0(dir_out, file_out, ".xlsx"))
+
+```
+
+
+-
+---
+
+# sessionInfo() and RStudio version
+
+```{r}
+sessionInfo()
+
+```
+
+RStudio version `r readLines("analysis/scripts/RStudioVersion.txt", n = 1)`.
+
+
+---
+
+END OF SCRIPT
+

@@ -160,56 +160,10 @@ p_all <- p_lydite + p_flint + plot_layout(guides = 'collect')
 print(p_all)
 
 #save to PDF
-	file_out <- paste0(file_path_sans_ext(info_in[["file"]]), "_TFE_EA_plot", ".pdf")
+	file_out <- paste0(file_path_sans_ext(info_in[["file"]]), "_EA_plot", ".pdf")
 	ggsave(filename = file_out, plot = p_all, path = dir_out, device = "pdf", width = 370, 
 	         height = 280, units = "mm")
 
-
-
-
-# plots 
-# plots first the lydite samples
-p_lydite2 <- ggplot(data = TFE_mean[grep("LYDIT", TFE_mean[["ID_cycle"]]), ], 
-             aes(x = strokes, y = Three_point.mean, colour = Edge.angle)) + 
-             geom_point(size = 2) +
-             geom_line(aes(group = ID)) +
-             facet_wrap(ID ~ Contact.material+Task, nrow = 3)+
-             theme_classic()+
-             xlab("strokes") + ylab(NULL) +
-             labs(colour = "Edge angle") +
-             ylim(30, 110) + 
-             scale_colour_manual(values = c("#046C9A", "#FAD510")) +
-             scale_x_discrete(breaks = c("before", "50strokes", "250strokes" ,
-                                         "1000strokes", "2000strokes"), labels = 
-                                       c("0", "50", "250", "1000", "2000"))
-
-
-# plots the flint samples 
-p_flint2 <- ggplot(data = TFE_mean[grep("FLT", TFE_mean[["ID_cycle"]]), ], 
-            aes(x = strokes, y = Three_point.mean, colour = Edge.angle)) + 
-            geom_point(size = 2) +
-            geom_line(aes(group = ID)) +
-            facet_wrap(ID ~ Contact.material+Task, nrow = 3)+
-            theme_classic()+
-            xlab("strokes") + ylab(NULL) +
-            labs(colour = "Edge angle") +
-            ylim(30, 110) + 
-            #coord_cartesian(ylim = range_var) +
-            scale_colour_manual(values = c("#046C9A", "#FAD510")) +
-            scale_x_discrete(breaks = c("before", "50strokes", "250strokes" , "1000strokes",
-                                        "2000strokes"), labels = c("0", "50", "250", "1000",
-                                        "2000"))
-
-	
-# combines the flint and the lydite plots 
-p2 <- p_flint2 + p_lydite2 + plot_layout(guides = 'collect')  
-       
-print(p2)
-
-#save to PDF
-	file_out <- paste0(file_path_sans_ext(info_in[["file"]]), "_TFE_EA_plot", ".pdf")
-	ggsave(filename = file_out, plot = p2, path = dir_out, device = "pdf", width = 370, 
-	         height = 280, units = "mm")
 
 
 ```
