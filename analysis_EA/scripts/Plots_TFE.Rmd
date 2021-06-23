@@ -1,0 +1,254 @@
+---
+title: "Plot - Tool performance based on edge angle"
+author: "Lisa Schunk"
+date: "22 6 2021"
+output: html_document
+---
+
+```{r Knitr Options, include = FALSE}
+knitr::opts_chunk$set(comment = NA, message = FALSE, indent = "", error = TRUE)
+
+```
+
+# Goal of the script
+This script plots all edge angle values calculated on the 3D models of the samples used during the tool function experiment. 
+
+
+```{r}
+dir_in <- "analysis_EA/derived_data/"
+dir_out <- "analysis_EA/plots"
+
+```
+
+Raw data must be located in `r paste0("~/", dir_in)`.  
+Formatted data will be saved in `r paste0("~/", dir_out)`.
+
+The knit directory for this script is the project directory.
+---
+
+
+# Load packages
+```{r}
+library(openxlsx)
+library(readxl)
+library(R.utils)
+library(ggplot2)
+library(tools)
+library(tidyverse)
+library(patchwork)
+library(ggsci)
+library(ggfortify)
+library(wesanderson)
+library(doBy)
+library(ggfortify)
+
+```
+
+
+---
+
+# Get name, path and information of the file 
+```{r}
+data_file <- list.files(dir_in, pattern = "\\.xlsx$", full.names = TRUE)
+md5_in <- md5sum(data_file)
+info_in <- data.frame(file = basename(names(md5_in)), checksum = md5_in, row.names = NULL)
+
+```
+
+
+The checksum (MD5 hashes) of the imported file is:  
+```{r, echo = FALSE}
+info_in
+
+```
+
+
+# Load data into R object
+```{r}
+imp_data <- read.xlsx(xlsxFile = data_file, sheet = 1, startRow = 1, colNames = TRUE,
+                      rowNames = FALSE, skipEmptyRows = FALSE) 
+str(imp_data)
+
+```
+
+The imported file is: "`r paste0("~/", data_file)`"  
+
+---
+
+
+# Prepare variables
+## Define numeric variables
+```{r}
+num.var <- 14:length(imp_data)
+
+```
+
+The following variables will be used: 
+
+```{r, echo=FALSE}
+for (i in num.var) cat("[",i,"] ", names(imp_data)[i], "\n", sep="")
+
+```
+
+
+---
+
+
+# Facet wrap to plot the data 
+## Tool function experiment 
+```{r}
+# selects only the data from the 'Three-point' method  
+TFE <- filter(imp_data, Angle_number == "3" | Angle_number == "4" | Angle_number == "5" |
+                Angle_number == "6")
+
+# selects only the data from the section 2 to 8 
+TFE <- filter(TFE, sec == "SEC-02" | sec == "SEC-03" | sec == "SEC-04" | sec == "SEC-05" |
+                sec == "SEC-06" | sec == "SEC-07" | sec == "SEC-8")
+
+# adds a column that combines sample and location
+TFE_data <- unite(TFE, ID_cycle, c(ID, strokes), remove = FALSE)
+
+# computes the mean per sample and cycle 
+TFE_mean <- summaryBy(. ~ ID_cycle + ID + strokes + Contact.material + 
+                        Raw.material + Edge.angle + Task, data = TFE_data, FUN = mean)
+
+# gets new order 
+TFE_mean$strokes <- factor(TFE_mean$strokes, levels=c("before", "50strokes", "250strokes",
+                                                        "1000strokes", "2000strokes"))
+
+TFE_mean$ID <- factor(TFE_mean$ID)
+
+
+
+p_lydite <- ggplot(data = TFE_mean[grep("LYDIT", TFE_mean[["ID_cycle"]]), ], 
+      aes(x= strokes, y = Three_point.mean, colour = Edge.angle)) +
+      geom_point(size = 2) +
+     # geom_text() +
+      theme_classic() +
+      geom_line(aes(group = ID)) +
+      facet_wrap(Raw.material ~ Task + Contact.material, ncol = 2) +
+      xlab("strokes") + ylab(NULL) +
+      labs(colour = "edge angle") +
+      ylim(25, 110) + 
+      scale_colour_manual(values = c("#046C9A", "#FAD510")) + 
+      scale_x_discrete(breaks = c("before", "50strokes", "250strokes",  
+                      "1000strokes", "2000strokes"), labels = c("0", "50", "250", "1000", "2000")) 
+    
+
+print(p_lydite)
+
+p_flint <- ggplot(data = TFE_mean[grep("FLT", TFE_mean[["ID_cycle"]]), ], 
+      aes(x= strokes, y = Three_point.mean, colour = Edge.angle)) +
+      geom_point(size = 2) +
+      theme_classic() +
+      geom_line(aes(group = ID)) +
+      facet_wrap(Raw.material ~ Task + Contact.material, ncol = 2) +
+      xlab("strokes") + ylab(NULL) +
+             labs(colour = "edge angle") +
+             ylim(25, 110) + 
+             scale_colour_manual(values = c("#046C9A", "#FAD510")) +
+             scale_x_discrete(breaks = c("before", "50strokes", "250strokes" ,
+                                         "1000strokes", "2000strokes"), labels = 
+                                       c("0", "50", "250", "1000", "2000")) 
+    
+
+print(p_flint)
+
+# combines the flint and the lydite plots 
+p_all <- p_lydite + p_flint + plot_layout(guides = 'collect')  
+       
+print(p_all)
+
+#save to PDF
+	file_out <- paste0(file_path_sans_ext(info_in[["file"]]), "_TFE_EA_plot", ".pdf")
+	ggsave(filename = file_out, plot = p_all, path = dir_out, device = "pdf", width = 370, 
+	         height = 280, units = "mm")
+
+
+
+
+# plots 
+# plots first the lydite samples
+p_lydite2 <- ggplot(data = TFE_mean[grep("LYDIT", TFE_mean[["ID_cycle"]]), ], 
+             aes(x = strokes, y = Three_point.mean, colour = Edge.angle)) + 
+             geom_point(size = 2) +
+             geom_line(aes(group = ID)) +
+             facet_wrap(ID ~ Contact.material+Task, nrow = 3)+
+             theme_classic()+
+             xlab("strokes") + ylab(NULL) +
+             labs(colour = "Edge angle") +
+             ylim(30, 110) + 
+             scale_colour_manual(values = c("#046C9A", "#FAD510")) +
+             scale_x_discrete(breaks = c("before", "50strokes", "250strokes" ,
+                                         "1000strokes", "2000strokes"), labels = 
+                                       c("0", "50", "250", "1000", "2000"))
+
+
+# plots the flint samples 
+p_flint2 <- ggplot(data = TFE_mean[grep("FLT", TFE_mean[["ID_cycle"]]), ], 
+            aes(x = strokes, y = Three_point.mean, colour = Edge.angle)) + 
+            geom_point(size = 2) +
+            geom_line(aes(group = ID)) +
+            facet_wrap(ID ~ Contact.material+Task, nrow = 3)+
+            theme_classic()+
+            xlab("strokes") + ylab(NULL) +
+            labs(colour = "Edge angle") +
+            ylim(30, 110) + 
+            #coord_cartesian(ylim = range_var) +
+            scale_colour_manual(values = c("#046C9A", "#FAD510")) +
+            scale_x_discrete(breaks = c("before", "50strokes", "250strokes" , "1000strokes",
+                                        "2000strokes"), labels = c("0", "50", "250", "1000",
+                                        "2000"))
+
+	
+# combines the flint and the lydite plots 
+p2 <- p_flint2 + p_lydite2 + plot_layout(guides = 'collect')  
+       
+print(p2)
+
+#save to PDF
+	file_out <- paste0(file_path_sans_ext(info_in[["file"]]), "_TFE_EA_plot", ".pdf")
+	ggsave(filename = file_out, plot = p2, path = dir_out, device = "pdf", width = 370, 
+	         height = 280, units = "mm")
+
+
+```
+
+
+
+---
+
+
+## Show files information
+```{r}
+files_out <- c(paste0(dir_out, file_out, ".xlsx"), paste0(dir_out, file_out, ".Rbin"))
+md5_out <- md5sum(files_out)
+info_out <- data.frame(files = basename(names(md5_out)), checksum = md5_out, 
+                       row.names = NULL)
+```
+
+
+---
+
+The checksum (MD5 hashes) of the exported files are:  
+```{r, echo = FALSE}
+info_out
+
+```
+
+
+---
+
+# sessionInfo() and RStudio version
+
+```{r}
+sessionInfo()
+
+```
+
+RStudio version `r readLines("analysis/scripts/RStudioVersion.txt", n = 1)`.
+
+
+---
+
+END OF SCRIPT
