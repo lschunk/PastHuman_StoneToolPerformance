@@ -78,11 +78,14 @@ The imported file is: "`r paste0("~/", data_file)`"
 ## Plots showing the strokes as lines 
 ```{r}
 
-filter(imp_data, Sample == "FLT8-4" | Stroke == "243")
+# exclude the strokes with the wrong/missing values: FLT8-3 -> stroke 1033 - 2000, FLT8-4 -> stroke 243, 244
+good_data <- imp_data[-c(410227:419907, 242382:242401), ]
+
+
 
 # plots all 2000 strokes per sample divided by 40 
 # splits the data in the individual 24 samples
-sp <- split(imp_data, imp_data[["Sample"]])
+sp <- split(good_data, good_data[["Sample"]])
 
 
 for (i in seq_along(sp)) {
@@ -140,7 +143,7 @@ abs.depth <- function(x) {
 
 # Define grouping variable and compute the summary statistics 
 depth <- summaryBy(Depth ~ Sample+Angle+Task+Raw_material, 
-                  data=imp_data, 
+                  data=good_data, 
                   FUN=abs.depth)
 
 str(depth)
@@ -178,12 +181,12 @@ ggsave(filename = file_out, plot = p3, path = dir_out, device = "pdf",
 
 ### Plot of all samples except the three outliers 
 ```{r}
-# defines the three outliers/bad samples
-bad_samples <- c("FLT8-3", "FLT8-4", "FLT8-10")
-# creates data frames without the outliers
-imp_data_good <- imp_data[!imp_data$Sample %in% bad_samples, ]
+# defines the outlier (FLT8-10 is here defined as outlier, because the result of this sample is not comparable to the other samples)
+bad_sample <- "FLT8-10"
+# creates data frames without the outlier
+good_data_outlier <- good_data[!good_data$Sample %in% bad_sample, ]
 # splits the data in the individual 21 samples
-sp_good <- split(imp_data_good, imp_data_good[["Sample"]])
+sp_good <- split(good_data_outlier, good_data_outlier[["Sample"]])
 
 
 # calculates the absolute depths reached per sample
@@ -192,7 +195,7 @@ abs.depth <- function(x) {
 }
 
 # Define grouping variable and compute the summary statistics 
-depth_good <- summaryBy(Depth ~ Sample + Angle + Task + Raw_material, data = imp_data_good, 
+depth_good <- summaryBy(Depth ~ Sample + Angle + Task + Raw_material, data = good_data_outlier, 
                   FUN = abs.depth)
 
 str(depth_good)
