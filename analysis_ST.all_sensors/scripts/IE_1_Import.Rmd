@@ -1,0 +1,180 @@
+---
+title: "Initial experiment - sensor recording"
+author: "João Marreiros & Lisa Schunk"
+date: "`r Sys.Date()`"
+output: word_document
+---
+
+
+```{r Knitr Options, include=FALSE}
+knitr::opts_chunk$set(comment=NA, message=FALSE, indent="", error=TRUE)
+
+```
+
+
+# Goal of the script
+This script reads the CSV files generated with the sensors (SMARTTESTER) during an initaial experiment in order to check the functionality of the sensors.    
+The script will:
+
+1. Read in the original CSV files, combines them and organise the data 
+2. Plot the data
+3. Write an XLSX-file and save an R object ready for further analysis in R 
+
+
+
+```{r}
+dir_in <- "analysis/raw_data/"
+dir_out <- "analysis/plots"
+
+```
+
+Raw data must be located in `r paste0("~/", dir_in)`.  
+Formatted data will be saved in `r paste0("~/", dir_out)`.
+The knit directory for this script is the project directory.
+
+
+---
+
+
+# Load packages
+```{r}
+library(ggplot2)
+library(readr)
+library(reshape2)
+library(ggpubr)
+library(magrittr)
+library(wesanderson)
+library(tools)
+library(chron)
+
+```
+
+---
+
+# Get name, path and information of the file
+```{r}
+data_file <- list.files(dir_in, pattern = "\\.csv$", full.names = TRUE)
+md5_in <- md5sum(data_file)
+info_in <- data.frame(files = basename(names(md5_in)), checksum = md5_in, 
+                      row.names = NULL)
+
+```
+
+
+The checksum (MD5 hashes) of the imported files are:  
+```{r, echo = FALSE}
+info_in
+
+```
+
+
+# Read in original data
+```{r}
+# the data contains information about force, friction, length and velocity
+
+force <- read_table2(data_file[1])
+friction <- read_table2(data_file[2])
+length <- read_table2(data_file[3])
+depth <- read_table2(data_file[4])
+velocity <- read_table2(data_file[5])
+
+```
+
+
+# Organise the data 
+```{r}
+# fills empty fields
+
+# force
+data_force <- as.data.frame(force)
+data_force <- melt(data_force, id = "steps")
+
+# friction
+data_friction <- as.data.frame(friction)
+data_friction <- melt(data_friction, id = "steps")
+
+# length
+data_length <- as.data.frame(length)
+data_length[is.na(data_length)] <- 0
+data_lenght <- melt(data_length, id = "steps")
+
+# depth
+data_depth <- as.data.frame(depth)
+data_depth <- melt(data_depth, id = "steps")
+
+# velocity
+data_velocity <- as.data.frame(velocity)
+data_velocity[is.na(data_velocity)] <- 0
+data_velocity <- melt(data_velocity, id = "steps")
+
+```
+
+# Plot the data 
+```{r}
+# force
+forceplot <- ggplot(data_force, aes(x = steps, y = value, colour = variable)) +
+             geom_line(alpha = 0.3) + 
+             theme_classic() +
+             labs(x = "distance [mm]", y = "force [N]", 
+             title = "") + 
+             theme(legend.position = "none") +
+             scale_colour_manual(values = wes_palette(n = 50, name =
+             "Moonrise2", type = "continuous")) 
+           
+# friction
+frictionplot <- ggplot(data_friction, aes(x = steps, y = value, colour = 
+                variable)) + geom_line(alpha = 0.3) +
+                theme_classic() +
+                labs(x = "distance [mm]", 
+                y = "force [N]", title = "", colour = "Strokes") +
+                theme(legend.position = "none") +
+                scale_colour_manual(values = wes_palette(n = 50, name =
+                "Moonrise2", type = "continuous")) 
+
+# velocity
+velocityplot <- ggplot(data_velocity, aes(x = steps, y = value, colour =
+                variable)) + geom_line(alpha=0.3) +
+                theme_classic() +
+                geom_line(alpha = 0.3) + 
+                labs(x = "distance [mm]", y = "velocity [mm/s]",                                  title = "", colour = "Strokes") + 
+                theme(legend.position = "none") +
+                scale_colour_manual(values = wes_palette(n = 50, name =
+                "Moonrise2", type = "continuous")) 
+
+# depth
+depthplot <- ggplot(data_depth, aes(x = steps, y = value, colour = variable)) +
+             geom_line(alpha = 0.3) + 
+             theme_classic() + 
+             labs(x = "distance [mm]", y = "depth [mm]",
+             title = "", colour = "Strokes") + theme(legend.position = "none") +
+             scale_colour_manual(values = wes_palette(n = 50, name =
+             "Moonrise2", type = "continuous")) 
+
+# plot all together
+all <- ggarrange(forceplot, frictionplot,  velocityplot, depthplot,
+       labels = c("Force", "Friction", "Velocity", "Depth"),
+       ncol = 2, nrow = 2) 
+       
+
+print(all)
+
+file_out <- paste0(file_path_sans_ext(info_in[["file"]]), "all", ".pdf")
+ggsave(filename = file_out, plot = all, path = dir_out, device = "pdf")
+
+```
+
+---
+
+# sessionInfo() and RStudio version
+
+```{r}
+sessionInfo()
+
+```
+
+RStudio version `r readLines("analysis/scripts/RStudioVersion.txt", n = 1)`.
+
+
+---
+
+END OF SCRIPT
