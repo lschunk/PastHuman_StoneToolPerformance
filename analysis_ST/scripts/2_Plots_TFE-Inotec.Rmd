@@ -78,12 +78,12 @@ The imported file is: "`r paste0("~/", data_file)`"
 ## Plots showing the strokes as lines 
 ```{r}
 
-# exclude the strokes with the wrong/missing values: FLT8-3 -> stroke 1033 - 2000, FLT8-4 -> stroke 243 + 244, FLT8-10 -> stoke 86 - 275, LYDIT5-7 -> 1997 - 2000, LYDIT5-9 ->  251 - 1000, LYDIT5-11 -> 251  - 1000, 
-good_data <- imp_data[-c(410227:419907, 242382:242401, 120833:122735, 359872:359911, 222454:229961, 62498: 69991), ]
+# exclude the strokes with the wrong/missing values: FLT8-3 -> stroke 1033 - 2000, FLT8-4 -> stroke 243 + 244, LYDIT5-7 -> 1997 - 2000 
+good_data <- imp_data[-c(410227:419907, 242382:242401, 359872:359911), ]
 
 
 
-# good_data <- imp_data
+#good_data <- imp_data
 
 
 # plots all 2000 strokes per sample divided by 40 
