@@ -78,10 +78,8 @@ The imported file is: "`r paste0("~/", data_file)`"
 ## Plots showing the strokes as lines 
 ```{r}
 
-# exclude the strokes with the wrong/missing values: FLT8-3 -> stroke 1033 - 2000, FLT8-4 -> stroke 243 + 244, LYDIT5-7 -> 1997 - 2000 
-good_data <- imp_data[-c(410227:419907, 242382:242401, 359872:359911), ]
-
-
+# exclude the strokes with the wrong/missing values: FLT8-3 -> stroke 1032 - 2000, FLT8-4 -> stroke 243 + 244 + 1921, LYDIT5-7 -> 1997 - 2000 
+good_data <- imp_data[-c(410218:419907, 242382:242401, 259107:259116,359872:359911), ]
 
 #good_data <- imp_data
 
@@ -177,6 +175,98 @@ print(p3)
 # save to PDF
 file_out <- paste0(file_path_sans_ext(info_in[["file"]]), "_P3_depth_plot", ".pdf")
 ggsave(filename = file_out, plot = p3, path = dir_out, device = "pdf", 
+       width = 180, units = "mm")
+
+
+```
+
+```{r}
+# calculates the absolute depths reached per sample
+abs.depth <- function(x) {
+  out <- abs(min(x) - max(x))
+}
+
+# Define grouping variable and compute the summary statistics 
+depth <- summaryBy(Depth ~ Sample+Angle+Task+Raw_material, 
+                  data=imp_data, 
+                  FUN=abs.depth)
+
+str(depth)
+
+# colour 
+depth[["Raw_material"]] <- factor(depth[["Raw_material"]])
+#Royal1 = c("#899DA4", "#C93312", "#FAEFD1", "#DC863B")
+custom.col7 <- data.frame(type = levels(depth$Raw_material), 
+                           col = c("#899DA4", "#DC863B")) 
+depth$col <- custom.col7[depth$Raw_material, "col"]
+
+
+# plots all depth points in one facet plot 
+p3b <- ggplot(data = depth, aes(x = Angle, y = Depth.abs.depth, colour = Raw_material)) +
+       geom_point() + labs(y = "Absolute depth (mm)") +
+       facet_wrap(~Task, strip.position = "bottom") +
+       # avoids overplotting of the labels (sample IDs)
+       geom_text_repel(aes(label=Sample), size = 2, nudge_x = -0.4, 
+                       segment.size = 0.1, force = 2, seed = 123) +
+       scale_y_continuous(trans = "reverse") +
+       scale_x_discrete(position="top") +
+       # removes the "_" between "Raw_material in the legend 
+	     labs(colour = gsub("_", " ", "Raw_material")) + 
+       scale_colour_manual(values = custom.col7$col) + 
+	     theme_classic()
+print(p3b)
+
+# save to PDF
+file_out <- paste0(file_path_sans_ext(info_in[["file"]]), "_P3b_depth_plot", ".pdf")
+ggsave(filename = file_out, plot = p3b, path = dir_out, device = "pdf", 
+       width = 180, units = "mm")
+
+
+```
+
+```{r}
+
+good_data_cut <- filter(good_data, Task == "cutting")
+
+
+# calculates the absolute depths reached per sample
+abs.depth <- function(x) {
+  out <- abs(min(x) - max(x))
+}
+
+# Define grouping variable and compute the summary statistics 
+depth <- summaryBy(Depth ~ Sample+Angle+Task+Raw_material, 
+                  data=good_data_cut, 
+                  FUN=abs.depth)
+
+str(depth)
+
+# colour 
+depth[["Raw_material"]] <- factor(depth[["Raw_material"]])
+#Royal1 = c("#899DA4", "#C93312", "#FAEFD1", "#DC863B")
+custom.col7 <- data.frame(type = levels(depth$Raw_material), 
+                           col = c("#899DA4", "#DC863B")) 
+depth$col <- custom.col7[depth$Raw_material, "col"]
+
+
+# plots all depth points in one facet plot 
+p3c <- ggplot(data = depth, aes(x = Angle, y = Depth.abs.depth, colour = Raw_material)) +
+       geom_point() + labs(y = "Absolute depth (mm)") +
+       facet_wrap(~Task, strip.position = "bottom") +
+       # avoids overplotting of the labels (sample IDs)
+       geom_text_repel(aes(label=Sample), size = 2, nudge_x = -0.4, 
+                       segment.size = 0.1, force = 2, seed = 123) +
+       scale_y_continuous(trans = "reverse") +
+       scale_x_discrete(position="top") +
+       # removes the "_" between "Raw_material in the legend 
+	     labs(colour = gsub("_", " ", "Raw_material")) + 
+       scale_colour_manual(values = custom.col7$col) + 
+	     theme_classic()
+print(p3c)
+
+# save to PDF
+file_out <- paste0(file_path_sans_ext(info_in[["file"]]), "_P3c_depth_plot", ".pdf")
+ggsave(filename = file_out, plot = p3c, path = dir_out, device = "pdf", 
        width = 180, units = "mm")
 
 
