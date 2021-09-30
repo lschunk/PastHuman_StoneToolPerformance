@@ -1,0 +1,238 @@
+---
+title: "Import CSV from ConfoMap - cut marks/grooves"
+author: "Lisa Schunk"
+date: "`r Sys.time()`"
+output: word_document
+---
+
+
+```{r Knitr Options, include=FALSE}
+knitr::opts_chunk$set(comment = NA, message = FALSE, indent = "", error = TRUE)
+
+```
+
+---
+
+
+# Goal of the script
+This script formats the output of the resulting CSV-file from applying a template computing the width and the depth of cut marks/grooves in bone plates in ConfoMap.
+The script will:
+
+1. Read in the original CSV-file   
+2. Format the data   
+3. Write an XLSX-file and save an R object ready for further analysis in R 
+
+```{r}
+dir_in <- "analysis_S.wide/raw_data"
+dir_out <- "analysis_S.wide/derived_data/"
+
+```
+
+Raw data must be located in `r paste0("~/", dir_in)`.  
+Formatted data will be saved in `r paste0("~/", dir_out)`.
+
+The knit directory for this script is the project directory.
+
+---
+
+
+# Load packages
+```{r}
+library(openxlsx)
+library(tools)
+library(R.utils)
+library(chron)
+
+```
+
+
+---
+
+
+# Get names, path and information of the file 
+```{r}
+data_file <- list.files(dir_in, pattern = "\\.csv$", full.names = TRUE)
+md5_in <- md5sum(data_file)
+info_in <- data.frame(file = basename(names(md5_in)), checksum = md5_in, row.names = NULL)
+
+```
+
+The checksum (MD5 hashes) of the imported file are:  
+```{r, echo = FALSE}
+info_in
+
+```
+
+
+---
+
+
+# Read in original CSV-file
+```{r}
+imp_data <- read.csv(data_file, header = FALSE, stringsAsFactors = FALSE, 
+                     na.strings = "*****")
+str(imp_data)
+
+```
+
+
+---
+
+
+# Format data
+## Keep only interesting columns and rows
+```{r}
+# keeps only the columns and rows of interest for the analysis 
+data_keep_col <- c(1:2,4, 6:8, 10:12, 15:18)
+data_keep_rows <- which(imp_data[[1]] != "#")
+data_keep <- imp_data[data_keep_rows, data_keep_col]
+
+```
+
+
+## Add headers
+```{r}
+head_data_keep <- unlist(imp_data[2, data_keep_col]) 
+colnames(data_keep) <- gsub("\\.+", "\\.", make.names(head_data_keep))
+colnames(data_keep) <- gsub("\\.$", "", colnames(data_keep)) 
+
+```
+
+
+## Identify results using frame numbers
+```{r}
+# combines the results from the different analysis based on the column numbers 
+# (ID from MountainsMAp)
+frames <- as.numeric(unlist(imp_data[1, data_keep_col]))
+info <- which(frames == 2)[-(1:3)]
+max.depth <- which(frames == 7)
+distance <- which(frames == 8)
+
+
+```
+
+
+## Save units
+```{r}
+# takes the units which were part of the headers and separates them; creates a data frame
+var_num <- c(info, max.depth, distance)
+# extracts 'unit' line for considered columns
+units_var <- unlist(imp_data[3, data_keep_col])[var_num] 
+# gets names associated to the units
+names(units_var) <- head_data_keep[var_num] 
+# puts all of it into a data.frame
+units_var_table <- data.frame(variable = names(units_var), unit = units_var) 
+
+```
+
+
+## Convert to numeric
+```{r}
+for (i in var_num) data_keep[[i]] <- as.numeric(data_keep[[i]])
+
+```
+
+
+## Split the column 'Name' into several columns
+```{r}
+# these lines extract the artefact ID out of the path name
+stud_name <- gsub("^([A-Za-z0-9_]+( --- ))+", "", data_keep[["Name"]])
+split_name <- do.call(rbind, strsplit(stud_name, "_"))[, 1:7]
+
+
+# splits the ID in the separate information 
+data_final <- data.frame(split_name[, c(1:4, 6:7)], data_keep[-3],
+                         stringsAsFactors = FALSE)
+colnames(data_final)[1:8] <- c("Exp.plate", "Equipment", "Movement", "Strokes", "Sample",
+                               "Edge.angle", "Analysis.date", "Analysis.time")
+
+
+```
+
+
+## Add columns about experiment, bone plate and sample raw material  
+```{r}
+# extracts the experiment based on the Exp.plate
+data_final[grep("-TFE", data_final[["Exp.plate"]]), "Experiment"] <- "TFE"
+data_final[["Experiment"]] <- factor(data_final[["Experiment"]])
+
+# extracts the bone plate based on the Exp.plate
+data_final[grep("I-TFE", data_final[["Exp.plate"]]), "Bone.plate"] <- "BP-I"
+data_final[grep("II-TFE", data_final[["Exp.plate"]]), "Bone.plate"] <- "BP-II"
+data_final[grep("III-TFE", data_final[["Exp.plate"]]), "Bone.plate"] <- "BP-III"
+data_final[["Bone.plate"]] <- factor(data_final[["Bone.plate"]])
+
+# extracts the raw material based on the Sample
+data_final[grep("FLT", data_final[["Sample"]]), "Raw.material"] <- "flint"
+data_final[grep("LYDIT", data_final[["Sample"]]), "Raw.material"] <- "lydite"
+data_final[["Raw.material"]] <- factor(data_final[["Raw.material"]])
+
+
+```
+
+
+## Ignore some columns and reorder columns
+```{r}
+data_final <- data_final[c(1, 5, 19:21, 3, 6, 4, 2, 7:18)]
+
+```
+
+
+## Add units as comment()
+```{r}
+comment(data_final) <- units_var
+
+```
+
+Type `comment(data_final)` to check the units of the columns.
+
+
+## Check the result
+```{r}
+str(data_final)
+head(data_final)
+
+```
+
+
+---
+
+
+# Save data
+## Format name of output file
+```{r}
+file_out <- "cut.marks_bone.plates"
+
+```
+The files will be saved as "`r paste0("~/", file_out, ".[ext]")`".
+
+
+## Write to XLSX
+```{r}
+write.xlsx(list(data = data_final, units = units_var_table), 
+           file = paste0(dir_out, file_out, ".xlsx"))
+
+```
+
+
+## Save R object
+```{r}
+saveObject(data_final, file = paste0(dir_out, file_out, ".Rbin"))
+
+```
+
+---
+
+# sessionInfo() and RStudio version
+
+```{r}
+sessionInfo()
+```
+
+RStudio version `r readLines("analysis/scripts/RStudioVersion.txt", n = 1)`.
+
+
+---
+
+
+END OF SCRIPT

@@ -15,7 +15,7 @@ This script plots all edge angle values calculated on the 3D models of the sampl
 
 
 ```{r}
-dir_in <- "analysis_EA/derived_data/"
+dir_in <- "analysis_EA/raw_data/"
 dir_out <- "analysis_EA/plots"
 
 ```
@@ -79,7 +79,7 @@ The imported file is: "`r paste0("~/", data_file)`"
 # Prepare variables
 ## Define numeric variables
 ```{r}
-num.var <- 14:length(imp_data)
+num.var <- 14
 
 ```
 
@@ -97,7 +97,7 @@ for (i in num.var) cat("[",i,"] ", names(imp_data)[i], "\n", sep="")
 # Facet wrap to plot the data 
 ## Tool function experiment 
 ```{r}
-# selects only the data from the 'Three-point' method  
+# selects only the data from the distance 3 to 6 
 TFE <- filter(imp_data, Angle_number == "3" | Angle_number == "4" | Angle_number == "5" |
                 Angle_number == "6")
 
@@ -123,18 +123,16 @@ TFE_mean$ID <- factor(TFE_mean$ID)
 p_lydite <- ggplot(data = TFE_mean[grep("LYDIT", TFE_mean[["ID_cycle"]]), ], 
       aes(x= strokes, y = Three_point.mean, colour = Edge.angle)) +
       geom_point(size = 2) +
-     # geom_text() +
       theme_classic() +
       geom_line(aes(group = ID)) +
-      facet_wrap(Raw.material ~ Task + Contact.material, ncol = 2) +
-      xlab("strokes") + ylab(NULL) +
+      facet_wrap(~ Task, ncol = 2) +
+      labs(title = "lydite", x = "strokes", y = "degrees") +
       labs(colour = "edge angle") +
       ylim(25, 110) + 
-      scale_colour_manual(values = c("#046C9A", "#FAD510")) + 
+      scale_colour_manual(values = c("#D67236", "#B40F20")) + 
       scale_x_discrete(breaks = c("before", "50strokes", "250strokes",  
                       "1000strokes", "2000strokes"), labels = c("0", "50", "250", "1000", "2000")) 
     
-
 print(p_lydite)
 
 p_flint <- ggplot(data = TFE_mean[grep("FLT", TFE_mean[["ID_cycle"]]), ], 
@@ -142,16 +140,15 @@ p_flint <- ggplot(data = TFE_mean[grep("FLT", TFE_mean[["ID_cycle"]]), ],
       geom_point(size = 2) +
       theme_classic() +
       geom_line(aes(group = ID)) +
-      facet_wrap(Raw.material ~ Task + Contact.material, ncol = 2) +
-      xlab("strokes") + ylab(NULL) +
-             labs(colour = "edge angle") +
-             ylim(25, 110) + 
-             scale_colour_manual(values = c("#046C9A", "#FAD510")) +
-             scale_x_discrete(breaks = c("before", "50strokes", "250strokes" ,
-                                         "1000strokes", "2000strokes"), labels = 
-                                       c("0", "50", "250", "1000", "2000")) 
+      facet_wrap(~ Task, ncol = 2) +
+      labs(title = "flint", x = "strokes", y = "degrees") +
+      labs(colour = "edge angle") +
+      ylim(25, 110) + 
+      scale_colour_manual(values = c("#D67236", "#B40F20")) +
+      scale_x_discrete(breaks = c("before", "50strokes", "250strokes" ,
+                       "1000strokes", "2000strokes"), labels = 
+                        c("0", "50", "250", "1000", "2000")) 
     
-
 print(p_flint)
 
 # combines the flint and the lydite plots 

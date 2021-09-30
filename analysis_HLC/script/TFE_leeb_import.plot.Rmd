@@ -25,8 +25,8 @@ The script will:
 
 
 ```{r}
-dir_in <- "analysis_HLC/raw_data/"
-dir_out <- "analysis_HLC/plots"
+dir_in <- "analysis_Leeb/raw_data/"
+dir_out <- "analysis_Leeb/plots"
 
 ```
 
@@ -81,7 +81,6 @@ str(imp_data)
 
 flint <- imp_data[1:11,]
 lydite <- imp_data[15:52,]
-balve <- imp_data[53,]
 
 ```
 
@@ -97,10 +96,6 @@ summary(flint[["hardness.in.HLC"]])
 length(lydite[["ID"]])
 summary(lydite[["hardness.in.HLC"]])
 
-# balve (MU-278)
-length(balve[["ID"]])
-summary(balve[["hardness.in.HLC"]])
-
 ```
 
 
@@ -111,8 +106,10 @@ data_plot <- ggplot (imp_data, aes(y = hardness.in.HLC, x = raw.material,
                                    fill = raw.material)) + 
              theme_classic() + 
              theme(legend.title = element_blank()) +
-             geom_boxplot(fill = c("#ECCBAE", "#D69C4E", "#046C9A")) +
-             geom_jitter() + labs(x="raw material", y="Leeb Rebound Hardness in HLC", title="") 
+             geom_boxplot(fill = c("#046C9A", "#F2AD00")) +
+             geom_jitter() + 
+             labs(x = "", y="Leeb Rebound Hardness in HLC", title="") +
+             guides(fill = "none")
 
 print(data_plot)
 
@@ -122,7 +119,7 @@ print(data_plot)
 # Save data
 ## Define output file name
 ```{r}
-file_out <- paste0(file_path_sans_ext(info_in[["file"]]), "TFE_plot", ".pdf")
+file_out <- paste0(file_path_sans_ext(info_in[["file"]]), "Leeb_TFE", ".pdf")
 ggsave(filename = file_out, plot = data_plot, path = dir_out, device = "pdf")
 
 ```

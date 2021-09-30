@@ -1,0 +1,299 @@
+---
+title: "Plots - cut marks/groovres"
+author: "Lisa Schunk"
+date: "`r Sys.time()`"
+output: word_document
+---
+
+
+```{r Knitr Options, include=FALSE}
+knitr::opts_chunk$set(comment=NA, message=FALSE, indent="", error=TRUE)
+
+```
+
+---
+
+
+# Goal of the script
+This script plots the variables to visualise the results of the tool function experiment.  
+
+
+
+```{r}
+dir_in <- "analysis_S.wide/derived_data/"
+dir_out <- "analysis_S.wide/plots"
+
+```
+
+Raw data must be located in `r paste0("~/", dir_in)`.  
+Formatted data will be saved in `r paste0("~/", dir_out)`.
+
+The knit directory for this script is the project directory.
+---
+
+
+# Load packages
+```{r}
+library(R.utils)
+library(ggplot2)
+library(tools)
+library(tidyverse)
+library(patchwork)
+library(ggsci)
+library(ggfortify)
+library(wesanderson)
+library(doBy)
+library(ggfortify)
+
+```
+
+
+---
+
+# Get name, path and information of the file 
+```{r}
+data_file <- list.files(dir_in, pattern = "\\.Rbin$", full.names = TRUE)
+md5_in <- md5sum(data_file)
+info_in <- data.frame(file = basename(names(md5_in)), checksum = md5_in, row.names = NULL)
+
+```
+
+
+The checksum (MD5 hashes) of the imported file is:  
+```{r, echo = FALSE}
+info_in
+
+```
+
+
+# Load data into R object
+```{r}
+imp_data <- loadObject(data_file)
+str(imp_data)
+
+```
+
+The imported file is: "`r paste0("~/", data_file)`"  
+
+
+---
+
+# Prepare variables
+## Define numeric variables
+```{r}
+num.var <- 19:length(imp_data)
+
+```
+
+The following variables will be used: 
+
+```{r, echo=FALSE}
+for (i in num.var) cat("[",i,"] ", names(imp_data)[i], "\n", sep="")
+
+```
+
+
+---
+
+## Convert nm to µm for MaxDepth and add a new column for type ("Data point" or "Mean")
+```{r}
+imp_data <- mutate(imp_data, Max.depth.µm = Maximum.depth.1/1000, Max.depth.µm = Maximum.depth.1/1000)
+imp_data
+
+# converts Sample from character into factor 
+imp_data[["Sample"]] <- factor(imp_data[["Sample"]])
+
+```
+
+---
+
+# Plot the maximum depth (facet plot = 1 plot per bone plate)
+## bone plate I. (cutting)
+```{r}
+
+TFE <- filter(imp_data, Experiment == "TFE")
+TFE.I <- filter(TFE, Bone.plate == "BP-I")
+
+# orders Sample differently 
+TFE.I[["Sample"]] <- ordered(TFE.I[["Sample"]], levels = c("FLT8-4", "FLT8-5", "FLT8-6", "LYDIT5-5", "LYDIT5-6", "LYDIT5-7", "FLT8-1", "FLT8-2", "FLT8-3", "LYDIT5-2", "LYDIT5-3", "LYDIT5-4"))
+
+
+p.TFE.I <- ggplot(TFE.I, aes(y = Max.depth.µm, x = Sample)) +
+                   geom_point(aes(colour = Raw.material, shape = Edge.angle), size = 4) +
+                   scale_y_reverse() +
+                   theme_classic() +
+                   guides(colour = "none") +
+                   labs(y = "max. depth [µm]", x = "sample", title = "cutting") +
+                   labs(shape = "edge angle") +
+                   scale_colour_manual(values = c("#046C9A", "#F2AD00"))
+                 
+plot(p.TFE.I)
+
+
+#save to PDF
+file_out <- paste0(file_path_sans_ext(info_in[["file"]]), "_TFE.I", ".pdf")
+ggsave(filename = file_out, plot = p.TFE.I, path = dir_out, device = "pdf")
+
+
+```
+
+
+## bone plate II. + III. (carving)
+```{r}
+
+TFE <- filter(imp_data, Experiment == "TFE")
+TFE.II <- filter(TFE, Bone.plate == "BP-II" | Bone.plate == "BP-III")
+
+# removes a additional test samples used for scraping  
+TFE.II <- TFE.II[1:12, ]
+
+# orders Sample differently 
+TFE.II[["Sample"]] <- ordered(TFE.II[["Sample"]], levels = c("FLT8-7", "FLT8-8", "FLT8-9", "LYDIT5-11", "LYDIT5-12", "LYDIT5-13", "FLT8-10", "FLT8-11", "FLT8-12", "LYDIT5-8", "LYDIT5-9", "LYDIT5-10"))
+
+
+p.TFE.II <- ggplot(TFE.II, aes(y = Max.depth.µm, x = Sample)) +
+                   geom_point(aes(colour = Raw.material, shape = Edge.angle), size = 4) +
+                   scale_y_reverse() +
+                   theme_classic() +
+                   guides(colour = "none") +
+                   labs(y = "max. depth [µm]", x = "sample", title = "carving") +
+                   labs(shape = "edge angle") +
+                   scale_colour_manual(values = c("#046C9A", "#F2AD00"))
+                 
+plot(p.TFE.II)
+
+
+#save to PDF
+file_out <- paste0(file_path_sans_ext(info_in[["file"]]), "_TFE.II", ".pdf")
+ggsave(filename = file_out, plot = p.TFE.II, path = dir_out, device = "pdf")
+
+
+```
+
+
+## bone plate II. + III. (carving)
+### without sample FLT8-10 ("outlier")
+```{r}
+
+# removes FLT8-10  
+TFE.IIb <- TFE.II[-4, ]
+
+
+p.TFE.IIb <- ggplot(TFE.IIb, aes(y = Max.depth.µm, x = Sample)) +
+                   geom_point(aes(colour = Raw.material, shape = Edge.angle), size = 4) +
+                   scale_y_reverse() +
+                   theme_classic() +
+                   guides(colour = "none") +
+                   labs(y = "max. depth [µm]", x = "sample", title = "carving") +
+                   labs(shape = "edge angle") +
+                   scale_colour_manual(values = c("#046C9A", "#F2AD00"))
+                 
+plot(p.TFE.IIb)
+
+
+#save to PDF
+file_out <- paste0(file_path_sans_ext(info_in[["file"]]), "_TFE.IIb", ".pdf")
+ggsave(filename = file_out, plot = p.TFE.IIb, path = dir_out, device = "pdf")
+
+
+```
+
+
+# Plot the width against the depth (facet plot = 1 plot per bone plate)
+## bone plate I. (cutting)
+```{r}
+
+TFE <- filter(imp_data, Experiment == "TFE")
+TFE.I <- filter(TFE, Bone.plate == "BP-I")
+
+
+p.TFE.I2 <- ggplot(TFE.I, aes(x = Distance.1, y = Distance.2, label = Sample)) +
+                   geom_point(aes(colour = Raw.material, shape = Edge.angle), size = 4) +
+                   geom_text(size = 3, hjust = 0.5, vjust = 1.5) +
+                   scale_y_reverse() +
+                   theme_classic() +
+                   guides(colour = "none") +
+                   labs(x = "widht [µm]", y = "depth [µm]", title = "cutting") +
+                   labs(shape = "edge angle") +
+                   scale_colour_manual(values = c("#046C9A", "#F2AD00"))
+                 
+plot(p.TFE.I2)
+
+
+#save to PDF
+file_out <- paste0(file_path_sans_ext(info_in[["file"]]), "_TFE.I2", ".pdf")
+ggsave(filename = file_out, plot = p.TFE.I2, path = dir_out, device = "pdf")
+
+
+```
+
+
+## bone plate II. + III. (carving)
+```{r}
+
+TFE <- filter(imp_data, Experiment == "TFE")
+TFE.II <- filter(TFE, Bone.plate == "BP-II" | Bone.plate == "BP-III")
+
+TFE.II <- TFE.II[1:12, ]
+
+p.TFE.II2 <- ggplot(TFE.II, aes(x = Distance.1, y = Distance.2, label = Sample)) +
+                   geom_point(aes(colour = Raw.material, shape = Edge.angle), size = 4) +
+                   geom_text(size = 3, hjust = 0.5, vjust = 2.5) +
+                   scale_y_reverse() +
+                   theme_classic() +
+                   guides(colour = "none") +
+                   labs(x = "widht [µm]", y = "depth [µm]", title = "carving") +
+                   labs(shape = "edge angle") +
+                   scale_colour_manual(values = c("#046C9A", "#F2AD00"))
+                 
+plot(p.TFE.II2)
+
+
+#save to PDF
+file_out <- paste0(file_path_sans_ext(info_in[["file"]]), "_TFE.II2", ".pdf")
+ggsave(filename = file_out, plot = p.TFE.II2, path = dir_out, device = "pdf")
+
+
+```
+
+
+## bone plate II. + III. (carving)
+### without sample FLT8-10 ("outlier")
+```{r}
+
+p.TFE.II2b <- ggplot(TFE.IIb, aes(x = Distance.1, y = Distance.2, label = Sample)) +
+                   geom_point(aes(colour = Raw.material, shape = Edge.angle), size = 4) +
+                   geom_text(size = 3, hjust = 0.5, vjust = 2.5) +
+                   scale_y_reverse() +
+                   theme_classic() +
+                   guides(colour = "none") +
+                   labs(x = "widht [µm]", y = "depth [µm]", title = "carving") +
+                   labs(shape = "edge angle") +
+                   scale_colour_manual(values = c("#046C9A", "#F2AD00"))
+                 
+plot(p.TFE.II2b)
+
+
+#save to PDF
+file_out <- paste0(file_path_sans_ext(info_in[["file"]]), "_TFE.II2b", ".pdf")
+ggsave(filename = file_out, plot = p.TFE.II2b, path = dir_out, device = "pdf")
+
+
+```
+
+
+---
+
+# sessionInfo() and RStudio version
+
+```{r}
+sessionInfo()
+
+```
+
+RStudio version `r readLines("analysis/scripts/RStudioVersion.txt", n = 1)`.
+
+
+---
+
+END OF SCRIPT
