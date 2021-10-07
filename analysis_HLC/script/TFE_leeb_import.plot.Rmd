@@ -25,8 +25,8 @@ The script will:
 
 
 ```{r}
-dir_in <- "analysis_Leeb/raw_data/"
-dir_out <- "analysis_Leeb/plots"
+dir_in <- "analysis_HLC/raw_data/"
+dir_out <- "analysis_HLC/plots"
 
 ```
 
@@ -79,8 +79,8 @@ imp_data <- read.xlsx(xlsxFile = data_file, sheet = 1, startRow = 3, colNames = 
 imp_data$hardness.in.HLC <- as.numeric(imp_data$hardness.in.HLC)
 str(imp_data)
 
-flint <- imp_data[1:11,]
-lydite <- imp_data[15:52,]
+flint <- imp_data[1:12,]
+lydite <- imp_data[13:24,]
 
 ```
 
