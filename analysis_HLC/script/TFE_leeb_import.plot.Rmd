@@ -68,8 +68,13 @@ imp_data <- read.xlsx(xlsxFile = data_file, sheet = 1, startRow = 3, colNames = 
 imp_data$hardness.in.HLC <- as.numeric(imp_data$hardness.in.HLC)
 str(imp_data)
 
+<<<<<<< HEAD
 flint <- imp_data[1:11,] 
 lydite <- imp_data[15:52,]
+=======
+flint <- imp_data[1:12,]
+lydite <- imp_data[13:24,]
+>>>>>>> d8ba18aa27c30f8328d67aae8a7f9fab146ee9cc
 
 ```
 
