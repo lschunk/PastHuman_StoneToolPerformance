@@ -1,0 +1,160 @@
+---
+title: "Plot - Tool performance based on edge angle"
+author: "Lisa Schunk"
+date: "`r Sys.time()`"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r Knitr Options, include = FALSE}
+knitr::opts_chunk$set(comment = NA, message = FALSE, indent = "", error = TRUE)
+
+```
+
+# Goal of the script
+This script plots all edge angle values calculated on the 3D models of the samples used during the tool function experiment. 
+
+
+```{r}
+dir_in <- "analysis_EA/raw_data/"
+dir_out <- "analysis_EA/plots"
+
+```
+
+Raw data must be located in `r paste0("~/", dir_in)`.  
+Formatted data will be saved in `r paste0("~/", dir_out)`.
+
+The knit directory for this script is the project directory.
+---
+
+# Load packages
+```{r Libraries}
+pack_to_load <- c("tidyverse", "R.utils", "openxlsx", "tools", "readxl", "ggplot2", "doBy")
+sapply(pack_to_load, library, character.only = TRUE, logical.return = TRUE)
+
+```
+
+
+---
+
+# Get name, path and information of the file 
+```{r}
+data_file <- list.files(dir_in, pattern = "\\.xlsx$", full.names = TRUE)
+
+```
+
+
+
+
+# Load data into R object
+```{r}
+imp_data <- read.xlsx(xlsxFile = data_file, sheet = 1, startRow = 1, colNames = TRUE,
+                      rowNames = FALSE, skipEmptyRows = FALSE) 
+str(imp_data)
+
+```
+
+The imported file is: "`r paste0("~/", data_file)`"  
+
+---
+
+
+# Prepare variables
+## Define numeric variables
+```{r}
+num.var <- 14
+
+```
+
+The following variables will be used: 
+
+```{r, echo=FALSE}
+for (i in num.var) cat("[",i,"] ", names(imp_data)[i], "\n", sep = "")
+
+```
+
+
+---
+
+
+# Facet wrap to plot the data 
+## Tool function experiment 
+```{r}
+# select only the data from the distance 3 to 6 
+TFE <- filter(imp_data, Angle_number %in% 3:6, sec %in% paste0("SEC-0", 2:8))
+
+# compute the mean per sample and cycle 
+TFE_mean <- summaryBy(. ~ ID + strokes + Contact.material + 
+                        Raw.material + Edge.angle + Task, data = TFE_data, FUN = mean)
+
+# get new order 
+TFE_mean$strokes[TFE_mean$strokes == "before"] <- "0"
+TFE_mean$strokes <- as.numeric(gsub("strokes", "", TFE_mean$strokes))
+
+p_all <- ggplot(data = TFE_mean, 
+      aes(x = strokes, y = Three_point.mean, colour = Edge.angle)) +
+      geom_point(size = 2) +
+      theme_classic() +
+      geom_line(aes(group = ID)) +
+      facet_grid(Raw.material ~ Task) +
+      labs(x = "strokes", y = "degrees") +
+      labs(colour = "edge angle") +
+      ylim(25, 110) + 
+      scale_colour_manual(values = c("#D67236", "#B40F20")) + 
+      scale_x_continuous(breaks = unique(TFE_mean$strokes))  
+
+print(p_all)
+
+#save to PDF
+	file_out <- paste0(basename(file_path_sans_ext(data_file)), ".pdf") 
+	ggsave(filename = file_out, plot = p_all, path = dir_out, device = "pdf", width = 370, 
+	         height = 280, units = "mm")
+
+```
+
+
+
+---
+
+
+## Show files information
+```{r}
+files_out <- list.files(dir_out, pattern = "\\.pdf$", full.names = TRUE)
+
+```
+
+
+---
+
+The exported files are:  
+```{r, echo = FALSE}
+files_out
+
+```
+
+
+---
+
+# sessionInfo() and RStudio version
+
+```{r}
+sessionInfo()
+
+```
+
+RStudio version `r readLines("analysis/scripts/RStudioVersion.txt", n = 1)`.
+
+---
+
+
+# Cite R packages used
+```{r Citation}
+for (i in pack_to_load) print(citation(i), bibtex = FALSE)
+
+```
+
+
+---
+
+END OF SCRIPT

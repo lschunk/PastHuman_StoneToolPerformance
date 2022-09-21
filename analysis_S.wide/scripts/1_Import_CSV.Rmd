@@ -2,7 +2,9 @@
 title: "Import CSV from ConfoMap - cut marks/grooves"
 author: "Lisa Schunk"
 date: "`r Sys.time()`"
-output: word_document
+output:
+  html_document:
+    df_print: paged
 ---
 
 
@@ -37,11 +39,9 @@ The knit directory for this script is the project directory.
 
 
 # Load packages
-```{r}
-library(openxlsx)
-library(tools)
-library(R.utils)
-library(chron)
+```{r Libraries}
+pack_to_load <- c("chron", "R.utils", "openxlsx", "tools")
+sapply(pack_to_load, library, character.only = TRUE, logical.return = TRUE)
 
 ```
 
@@ -52,14 +52,13 @@ library(chron)
 # Get names, path and information of the file 
 ```{r}
 data_file <- list.files(dir_in, pattern = "\\.csv$", full.names = TRUE)
-md5_in <- md5sum(data_file)
-info_in <- data.frame(file = basename(names(md5_in)), checksum = md5_in, row.names = NULL)
 
 ```
 
-The checksum (MD5 hashes) of the imported file are:  
+
+The imported file is:  
 ```{r, echo = FALSE}
-info_in
+data_file
 
 ```
 
@@ -69,8 +68,7 @@ info_in
 
 # Read in original CSV-file
 ```{r}
-imp_data <- read.csv(data_file, header = FALSE, stringsAsFactors = FALSE, 
-                     na.strings = "*****")
+imp_data <- read.csv(data_file, header = FALSE)
 str(imp_data)
 
 ```
@@ -82,8 +80,8 @@ str(imp_data)
 # Format data
 ## Keep only interesting columns and rows
 ```{r}
-# keeps only the columns and rows of interest for the analysis 
-data_keep_col <- c(1:2,4, 6:8, 10:12, 15:18)
+# keep only the columns and rows of interest for the analysis 
+data_keep_col <- c(1:2, 4, 6:8, 10:12, 15:18)
 data_keep_rows <- which(imp_data[[1]] != "#")
 data_keep <- imp_data[data_keep_rows, data_keep_col]
 
@@ -95,32 +93,21 @@ data_keep <- imp_data[data_keep_rows, data_keep_col]
 head_data_keep <- unlist(imp_data[2, data_keep_col]) 
 colnames(data_keep) <- gsub("\\.+", "\\.", make.names(head_data_keep))
 colnames(data_keep) <- gsub("\\.$", "", colnames(data_keep)) 
-
-```
-
-
-## Identify results using frame numbers
-```{r}
-# combines the results from the different analysis based on the column numbers 
-# (ID from MountainsMAp)
-frames <- as.numeric(unlist(imp_data[1, data_keep_col]))
-info <- which(frames == 2)[-(1:3)]
-max.depth <- which(frames == 7)
-distance <- which(frames == 8)
-
+colnames(data_keep)[12:13] <- c("Width", "Depth")
+colnames(data_keep)[11] <- gsub("\\.1$", "", colnames(data_keep)[11])
 
 ```
 
 
 ## Save units
 ```{r}
-# takes the units which were part of the headers and separates them; creates a data frame
-var_num <- c(info, max.depth, distance)
-# extracts 'unit' line for considered columns
+# take the units which were part of the headers and separates them; create a data frame
+var_num <- 4:13
+# extract 'unit' line for considered columns
 units_var <- unlist(imp_data[3, data_keep_col])[var_num] 
-# gets names associated to the units
-names(units_var) <- head_data_keep[var_num] 
-# puts all of it into a data.frame
+# get names associated to the units
+names(units_var) <- colnames(data_keep)[var_num] 
+# put all of it into a data.frame
 units_var_table <- data.frame(variable = names(units_var), unit = units_var) 
 
 ```
@@ -135,45 +122,47 @@ for (i in var_num) data_keep[[i]] <- as.numeric(data_keep[[i]])
 
 ## Split the column 'Name' into several columns
 ```{r}
-# these lines extract the artefact ID out of the path name
-stud_name <- gsub("^([A-Za-z0-9_]+( --- ))+", "", data_keep[["Name"]])
-split_name <- do.call(rbind, strsplit(stud_name, "_"))[, 1:7]
+# split the ID in the separate information 
+split_name <- do.call(rbind, strsplit(data_keep[["Name"]], "_"))
 
-
-# splits the ID in the separate information 
-data_final <- data.frame(split_name[, c(1:4, 6:7)], data_keep[-3],
-                         stringsAsFactors = FALSE)
-colnames(data_final)[1:8] <- c("Exp.plate", "Equipment", "Movement", "Strokes", "Sample",
-                               "Edge.angle", "Analysis.date", "Analysis.time")
-
+# add these columns to data_keep and rename columns
+data_final <- data.frame(split_name, data_keep[-3], stringsAsFactors = FALSE)
+colnames(data_final)[1:9] <- c("Bone.plate", "Equipment", "Movement", "Strokes", "Acquisition.date",
+                               "Sample", "Edge.angle", "Analysis.date", "Analysis.time")
 
 ```
 
 
-## Add columns about experiment, bone plate and sample raw material  
+## Add or edit columns about experiment, bone plate, sample raw material and edge angle
 ```{r}
-# extracts the experiment based on the Exp.plate
-data_final[grep("-TFE", data_final[["Exp.plate"]]), "Experiment"] <- "TFE"
-data_final[["Experiment"]] <- factor(data_final[["Experiment"]])
+# extract the experiment based on the Bone.plate
+data_final[["Experiment"]] <- gsub("BP-I+-", "", data_final[["Bone.plate"]])
 
-# extracts the bone plate based on the Exp.plate
-data_final[grep("I-TFE", data_final[["Exp.plate"]]), "Bone.plate"] <- "BP-I"
-data_final[grep("II-TFE", data_final[["Exp.plate"]]), "Bone.plate"] <- "BP-II"
-data_final[grep("III-TFE", data_final[["Exp.plate"]]), "Bone.plate"] <- "BP-III"
-data_final[["Bone.plate"]] <- factor(data_final[["Bone.plate"]])
+# edit the Bone.plate column
+data_final[["Bone.plate"]] <- gsub("-TFE", "", data_final[["Bone.plate"]])
 
-# extracts the raw material based on the Sample
+# extract the raw material based on the Sample
 data_final[grep("FLT", data_final[["Sample"]]), "Raw.material"] <- "flint"
 data_final[grep("LYDIT", data_final[["Sample"]]), "Raw.material"] <- "lydite"
-data_final[["Raw.material"]] <- factor(data_final[["Raw.material"]])
 
+# edit Edge.angle
+data_final[["Edge.angle"]] <- gsub("deg", "°", data_final[["Edge.angle"]])
+
+```
+
+
+## Convert dates and times
+```{r}
+data_final$Analysis.date <- as.Date(data_final$Analysis.date, format = "%d.%m.%Y")
+data_final$Analysis.time <- times(data_final$Analysis.time)
+data_final$Acquisition.date <- as.Date(data_final$Acquisition.date, format = "%Y%m%d")
 
 ```
 
 
 ## Ignore some columns and reorder columns
 ```{r}
-data_final <- data_final[c(1, 5, 19:21, 3, 6, 4, 2, 7:18)]
+data_final <- data_final[c(2, 5, 8:9, 20, 1, 21, 6, 3:4, 7, 10:19)]
 
 ```
 
@@ -230,6 +219,15 @@ sessionInfo()
 ```
 
 RStudio version `r readLines("analysis/scripts/RStudioVersion.txt", n = 1)`.
+
+
+---
+
+# Cite R packages used
+```{r Citation}
+for (i in pack_to_load) print(citation(i), bibtex = FALSE)
+
+```
 
 
 ---
