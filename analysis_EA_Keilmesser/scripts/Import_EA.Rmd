@@ -5,6 +5,10 @@ date: "`r Sys.time()`"
 output:
   html_document:
     df_print: paged
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    number_sections: true
 ---
 
 ```{r Knitr Options, include = FALSE}

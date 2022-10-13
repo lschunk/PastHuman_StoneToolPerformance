@@ -5,6 +5,10 @@ date: "`r Sys.time()`"
 output:
   html_document:
     df_print: paged
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    number_sections: true
 ---
 
 ```{r Knitr Options, include = FALSE}
@@ -86,7 +90,7 @@ TFE <- filter(imp_data, Angle_number %in% 3:6, sec %in% paste0("SEC-0", 2:8))
 
 # compute the mean per sample and cycle 
 TFE_mean <- summaryBy(. ~ ID + strokes + Contact.material + 
-                        Raw.material + Edge.angle + Task, data = TFE_data, FUN = mean)
+                        Raw.material + Edge.angle + Task, data = TFE, FUN = mean)
 
 # get new order 
 TFE_mean$strokes[TFE_mean$strokes == "before"] <- "0"
