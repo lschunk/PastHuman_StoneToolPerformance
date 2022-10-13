@@ -3,8 +3,12 @@ title: "Import CSV from ConfoMap - cut marks/grooves"
 author: "Lisa Schunk"
 date: "`r Sys.time()`"
 output:
-  html_document:
+    html_document:
     df_print: paged
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    number_sections: true
 ---
 
 
@@ -218,7 +222,7 @@ saveObject(data_final, file = paste0(dir_out, file_out, ".Rbin"))
 sessionInfo()
 ```
 
-RStudio version `r readLines("analysis/scripts/RStudioVersion.txt", n = 1)`.
+RStudio version `r readLines("RStudioVersion.txt", n = 1)`.
 
 
 ---

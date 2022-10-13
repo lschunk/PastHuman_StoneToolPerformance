@@ -3,8 +3,12 @@ title: "Equotip hardness measurements - Tool function experiment"
 author: "Lisa Schunk"
 date: "`r Sys.Date()`"
 output:
-  html_document:
+    html_document:
     df_print: paged
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    number_sections: true
 ---
 
 
@@ -68,13 +72,10 @@ imp_data <- read.xlsx(xlsxFile = data_file, sheet = 1, startRow = 3, colNames = 
 imp_data$hardness.in.HLC <- as.numeric(imp_data$hardness.in.HLC)
 str(imp_data)
 
-<<<<<<< HEAD
-flint <- imp_data[1:11,] 
-lydite <- imp_data[15:52,]
-=======
+
 flint <- imp_data[1:12,]
 lydite <- imp_data[13:24,]
->>>>>>> d8ba18aa27c30f8328d67aae8a7f9fab146ee9cc
+
 
 ```
 
@@ -106,13 +107,13 @@ data_plot <- ggplot (imp_data, aes(y = hardness.in.HLC, x = raw.material, fill =
 
 print(data_plot)
 
+
 ```
 
 
 # Save data
 ## Define output file name
 ```{r}
-#file_out <- paste0(file_path_sans_ext(info_in[["file"]]), "Leeb_TFE", ".pdf")
 file_out <- paste0(basename(file_path_sans_ext(data_file)), ".pdf")
 ggsave(filename = file_out, plot = data_plot, path = dir_out, device = "pdf")
 
@@ -129,7 +130,7 @@ sessionInfo()
 
 ```
 
-RStudio version `r readLines("analysis/scripts/RStudioVersion.txt", n = 1)`.
+RStudio version `r readLines("RStudioVersion.txt", n = 1)`.
 
 
 

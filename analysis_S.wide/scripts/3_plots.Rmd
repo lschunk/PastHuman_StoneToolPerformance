@@ -3,8 +3,12 @@ title: "Plots - cut marks/groovres"
 author: "Lisa Schunk"
 date: "`r Sys.time()`"
 output:
-  html_document:
+    html_document:
     df_print: paged
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    number_sections: true
 ---
 
 
@@ -95,115 +99,56 @@ imp_data
 
 ---
 
-# Plot the maximum depth (facet plot = 1 plot per bone plate)
-## All samples
-```{r}
-lev_Bone.plate <- levels(factor(imp_data$Bone.plate))
-facet_titles <- paste(lev_Bone.plate, c("(cutting)", "(carving)", "(carving)"))
-names(facet_titles) <- lev_Bone.plate
 
-p.TFE <- ggplot(imp_data, aes(y = Max.depth.µm, x = Sample)) +
+# Plot the data: width against depth  
+## cutting (BP I.)
+```{r}
+# filter the data for the cutting only 
+cutting <- filter(imp_data, Movement == "cutting")
+
+BP.I <- ggplot(cutting, aes(x = Width, y = Depth, label = Sample)) +
                    geom_point(aes(colour = Raw.material, shape = Edge.angle), size = 4) +
+                   geom_text(size = 3, hjust = 0.5, vjust = 1.5) +
                    scale_y_reverse() +
-                   facet_wrap(~Bone.plate, nrow = 3, scales = "free", 
-                              labeller = labeller(Bone.plate = facet_titles)) + 
                    theme_classic() +
-                   theme(legend.position = "bottom") +
                    guides(colour = "none") +
-                   labs(y = "max. depth [µm]", x = "sample") +
+                   labs(x = "widht [µm]", y = "depth [µm]", title = "cutting") +
                    labs(shape = "edge angle") +
                    scale_colour_manual(values = c("#046C9A", "#F2AD00"))
                  
-plot(p.TFE)
+plot(BP.I)
 
 
 #save to PDF
-file_out <- paste0(basename(file_path_sans_ext(data_file)), "_TFE.pdf")
-ggsave(filename = file_out, plot = p.TFE, path = dir_out, device = "pdf", 
-       height = 240, width = 190, unit = "mm")
+file_out <- paste0(basename(file_path_sans_ext(data_file)), "_cutting.pdf")
+ggsave(filename = file_out, plot = BP.I, path = dir_out, device = "pdf")
 
 ```
 
 
-## without sample FLT8-10 ("outlier")
+## carving (BP II. & III.)
 ```{r}
-# remove FLT8-10  
-TFE_no.out <- imp_data[imp_data$Sample != "FLT8-10", ]
+# filter the data for the carving only 
+carving <- filter(imp_data, Movement == "carving")
+# remove "outlier" (FLT8-10)
+carving <- carving[-4, ]
 
-
-p.TFE_no.out <- ggplot(TFE_no.out, aes(y = Max.depth.µm, x = Sample)) +
-                       geom_point(aes(colour = Raw.material, shape = Edge.angle), size = 4) +
-                       scale_y_reverse() +
-                       facet_wrap(~Bone.plate, nrow = 3, scales = "free", 
-                                  labeller = labeller(Bone.plate = facet_titles)) + 
-                       theme_classic() +
-                       theme(legend.position = "bottom") +
-                       guides(colour = "none") +
-                       labs(y = "max. depth [µm]", x = "sample") +
-                       labs(shape = "edge angle") +
-                       scale_colour_manual(values = c("#046C9A", "#F2AD00"))
+BP.II_III <- ggplot(carving, aes(x = Width, y = Depth, label = Sample)) +
+                   geom_point(aes(colour = Raw.material, shape = Edge.angle), size = 4) +
+                   geom_text(size = 3, hjust = 0.5, vjust = 2.5) +
+                   scale_y_reverse() +
+                   theme_classic() +
+                   guides(colour = "none") +
+                   labs(x = "widht [µm]", y = "depth [µm]", title = "carving") +
+                   labs(shape = "edge angle") +
+                   scale_colour_manual(values = c("#046C9A", "#F2AD00"))
                  
-plot(p.TFE_no.out)
+plot(BP.II_III)
 
 
 #save to PDF
-file_out_no.out <- paste0(basename(file_path_sans_ext(data_file)), "_TFE-no-outlier.pdf")
-ggsave(filename = file_out_no.out, plot = p.TFE_no.out, path = dir_out, device = "pdf", 
-       height = 240, width = 190, unit = "mm")
-
-```
-
-
-# Plot the width against the depth (facet plot = 1 plot per bone plate)
-## All samples
-```{r}
-p.width_depth <- ggplot(imp_data, aes(x = Width, y = Depth, label = Sample)) +
-                        geom_point(aes(colour = Raw.material, shape = Edge.angle), size = 4) +
-                        geom_text(size = 3, hjust = 0.5, vjust = 1.5) +
-                        scale_y_reverse() +
-                        facet_wrap(~Bone.plate, nrow = 3, scales = "free", 
-                                   labeller = labeller(Bone.plate = facet_titles)) + 
-                        theme_classic() +
-                        theme(legend.position = "bottom") +
-                        guides(colour = "none") +
-                        labs(x = "Width [µm]", y = "Depth [µm]") +
-                        labs(shape = "edge angle") +
-                        scale_colour_manual(values = c("#046C9A", "#F2AD00"))
-                 
-plot(p.width_depth)
-
-
-#save to PDF
-file_out_width.depth <- paste0(basename(file_path_sans_ext(data_file)), "_TFE_width-depth.pdf")
-ggsave(filename = file_out_width.depth, plot = p.width_depth, path = dir_out, device = "pdf", 
-       height = 240, width = 190, unit = "mm")
-
-```
-
-
-## Without sample FLT8-10 ("outlier")
-```{r}
-p.width_depth_no.out <- ggplot(TFE_no.out, aes(x = Width, y = Depth, label = Sample)) +
-                        geom_point(aes(colour = Raw.material, shape = Edge.angle), size = 4) +
-                        geom_text(size = 3, hjust = 0.5, vjust = 1.5) +
-                        scale_y_reverse() +
-                        facet_wrap(~Bone.plate, nrow = 3, scales = "free", 
-                                   labeller = labeller(Bone.plate = facet_titles)) + 
-                        theme_classic() +
-                        theme(legend.position = "bottom") +
-                        guides(colour = "none") +
-                        labs(x = "Width [µm]", y = "Depth [µm]") +
-                        labs(shape = "edge angle") +
-                        scale_colour_manual(values = c("#046C9A", "#F2AD00"))
-                 
-plot(p.width_depth_no.out)
-
-
-#save to PDF
-file_out_width.dept_no.out <- paste0(basename(file_path_sans_ext(data_file)),
-                                     "_TFE_width-depth_no-outlier.pdf")
-ggsave(filename = file_out_width.dept_no.out, plot = p.width_depth_no.out, 
-       path = dir_out, device = "pdf", height = 240, width = 190, unit = "mm")
+file_out <- paste0(basename(file_path_sans_ext(data_file)), "_carving.pdf")
+ggsave(filename = file_out, plot = BP.II_III, path = dir_out, device = "pdf")
 
 ```
 
@@ -217,7 +162,7 @@ sessionInfo()
 
 ```
 
-RStudio version `r readLines("analysis/scripts/RStudioVersion.txt", n = 1)`.
+RStudio version `r readLines("RStudioVersion.txt", n = 1)`.
 
 
 ---

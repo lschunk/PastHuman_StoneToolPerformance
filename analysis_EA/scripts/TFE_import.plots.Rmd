@@ -147,7 +147,7 @@ sessionInfo()
 
 ```
 
-RStudio version `r readLines("analysis/scripts/RStudioVersion.txt", n = 1)`.
+RStudio version `r readLines("RStudioVersion.txt", n = 1)`.
 
 ---
 

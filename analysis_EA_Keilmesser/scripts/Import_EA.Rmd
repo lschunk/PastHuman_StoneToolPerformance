@@ -45,7 +45,8 @@ The knit directory for this script is the project directory.
 # Load packages
 ```{r Libraries}
 pack_to_load <- c("tidyverse", "R.utils", "openxlsx", "tools")
-sapply(pack_to_load, library, character.only = TRUE, logical.return = TRUE)
+sapply(pack_to_load, library, character.only = TRUE, 
+       logical.return = TRUE)
 
 ```
 
@@ -216,7 +217,7 @@ sessionInfo()
 
 ```
 
-RStudio version `r readLines("analysis/scripts/RStudioVersion.txt", n = 1)`.
+RStudio version `r readLines("RStudioVersion.txt", n = 1)`.
 
 
 ---
