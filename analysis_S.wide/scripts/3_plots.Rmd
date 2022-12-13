@@ -126,7 +126,7 @@ ggsave(filename = file_out, plot = BP.I, path = dir_out, device = "pdf")
 ```
 
 
-## carving (BP II. & III.)
+## carving (BP II. & III.; without FLT8-10)
 ```{r}
 # filter the data for the carving only 
 carving <- filter(imp_data, Movement == "carving")
@@ -152,6 +152,30 @@ ggsave(filename = file_out, plot = BP.II_III, path = dir_out, device = "pdf")
 
 ```
 
+
+## carving (BP II. & III.; with FLT8-10)
+```{r}
+# filter the data for the carving only 
+carving.all <- filter(imp_data, Movement == "carving")
+
+BP.II_III.all <- ggplot(carving.all, aes(x = Width, y = Depth, label = Sample)) +
+                   geom_point(aes(colour = Raw.material, shape = Edge.angle), size = 4) +
+                   geom_text(size = 3, hjust = 0.5, vjust = 2.5) +
+                   scale_y_reverse() +
+                   theme_classic() +
+                   guides(colour = "none") +
+                   labs(x = "widht [µm]", y = "depth [µm]", title = "carving") +
+                   labs(shape = "edge angle") +
+                   scale_colour_manual(values = c("#046C9A", "#F2AD00"))
+                 
+plot(BP.II_III.all)
+
+
+#save to PDF
+file_out <- paste0(basename(file_path_sans_ext(data_file)), "_carving.all.pdf")
+ggsave(filename = file_out, plot = BP.II_III.all, path = dir_out, device = "pdf")
+
+```
 
 ---
 
