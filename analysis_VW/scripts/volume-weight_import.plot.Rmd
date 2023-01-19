@@ -1,0 +1,161 @@
+---
+title: "Volume and weight measurements - Tool function experiment"
+author: "Lisa Schunk"
+date: "`r Sys.Date()`"
+output:
+    html_document:
+    df_print: paged
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    number_sections: true
+---
+
+
+```{r Knitr Options, include=FALSE}
+knitr::opts_chunk$set(comment=NA, message=FALSE, indent="", error=TRUE)
+
+```
+
+---
+
+
+# Goal of the script
+This script reads the xlsx file (two types of measurements: weight measured with a weighing scale and volume calculated based on 3D models.  
+The script will:
+
+1. Read in the original xlsx file and organise the data 
+2. Plot the data 
+3. Write an XLSX-file and save an R object ready for further analysis in R 
+
+
+
+```{r}
+dir_in <- "analysis_VW/raw_data/"
+dir_out <- "analysis_VW/plots"
+
+```
+
+Raw data must be located in `r paste0("~/", dir_in)`.  
+Formatted data will be saved in `r paste0("~/", dir_out)`.
+The knit directory for this script is the project directory.
+
+
+---
+
+# Load packages
+```{r Libraries}
+pack_to_load <- c("tidyverse", "readr", "openxlsx", "tools", "ggplot2", "readxl",
+                  "R.utils","patchwork", "ggsci", "ggfortify", "wesanderson", "doBy")
+sapply(pack_to_load, library, character.only = TRUE, logical.return = TRUE)
+
+```
+
+
+---
+
+
+# Get name, path and information of the file
+```{r}
+data_file <- list.files(dir_in, pattern = "\\.xlsx$", full.names = TRUE)
+md5_in <- md5sum(data_file)
+info_in <- data.frame(files = basename(names(md5_in)), checksum = md5_in, 
+                  row.names = NULL)
+
+```
+
+
+# Read in original xlsx-file
+```{r}
+imp_data <- read.xlsx(xlsxFile = data_file, sheet = 1, startRow = 1, colNames = TRUE, 
+                      rowNames = FALSE, skipEmptyRows = FALSE) 
+str(imp_data)
+
+# get new order 
+imp_data$cycle <- factor(imp_data$cycle, levels=c("before", "after"))
+
+
+flint <- imp_data[1:24,]
+lydite <- imp_data[25:48,]
+
+#flint <- imp_data[1:12,]
+#lydite <- imp_data[13:24,]
+
+
+```
+
+
+# Data analsysis - plot 
+```{r}
+# boxplot
+data_plot <- ggplot (flint, aes(y = volume_mm3, x = cycle)) +
+             geom_point(aes(colour = ID), size = 2) +
+             #geom_line(aes(linetype = ID), size = 1) +
+             theme_classic() + 
+             theme(legend.title = element_blank()) +
+             geom_jitter() + 
+             labs(x = "", y = "volume [mm3]", title = "") +
+             guides(fill = "none")
+
+print(data_plot)
+
+ f_cutiing_v <- ggplot(data = flint[grep("cutting", flint[["motion"]]), ], 
+                       aes_string(x = "cycle", y = "volume_mm3", colour = "motion")) +
+                geom_point(size = 3) + 
+                geom_line(aes(group = ID)) + 
+                facet_wrap(ID ~ edge_angle, nrow = 2) + 
+                scale_colour_futurama() +
+                theme_classic()
+ 
+ print(f_cutiing_v)
+ 
+ f_cutting_w <- ggplot(data = flint[grep("cutting", flint[["motion"]]), ], 
+                       aes_string(x = "cycle", y = "weight_g", colour = "motion")) +
+                geom_point(size = 3) + 
+                geom_line(aes(group = ID)) + 
+                facet_wrap(ID ~ edge_angle, nrow = 2) + 
+                scale_colour_futurama() +
+                theme_classic()
+ 
+ print(f_cutting_w) 
+
+ # combine the flint and the lydite plots 
+  p <- f_cutiing_v + f_cutting_w + plot_layout(width = c(2/4, 2/4), guides = 'collect')  
+
+  print(p)
+  
+```
+
+
+# Save data
+## Define output file name
+```{r}
+file_out <- paste0(basename(file_path_sans_ext(data_file)), ".pdf")
+ggsave(filename = file_out, plot = data_plot, path = dir_out, device = "pdf")
+
+```
+The files will be saved as "`r paste0("~/", dir_out, ".[ext]")`".
+
+
+---
+
+# sessionInfo() and RStudio version
+
+```{r}
+sessionInfo()
+
+```
+
+RStudio version `r readLines("RStudioVersion.txt", n = 1)`.
+
+
+
+# Cite R packages used
+```{r Citation}
+for (i in pack_to_load) print(citation(i), bibtex = FALSE)
+
+```
+
+--- 
+
+END OF SCRIPT

@@ -90,13 +90,19 @@ TFE <- filter(imp_data, Angle_number %in% 3:6, sec %in% paste0("SEC-0", 2:8))
 
 # compute the mean per sample and cycle 
 TFE_mean <- summaryBy(. ~ ID + strokes + Contact.material + 
-                        Raw.material + Edge.angle + Task, data = TFE, FUN = mean)
+                      Raw.material + Edge.angle + Task, data = TFE, FUN = mean)
 
 # get new order 
 TFE_mean$strokes[TFE_mean$strokes == "before"] <- "0"
 TFE_mean$strokes <- as.numeric(gsub("strokes", "", TFE_mean$strokes))
 
-p_all <- ggplot(data = TFE_mean, 
+
+# filter the data for raw material 
+flint <- filter(TFE_mean, Raw.material == "flint")
+lydite <- filter(TFE_mean, Raw.material == "lydite")
+
+
+p_flint <- ggplot(data = flint, 
       aes(x = strokes, y = Three_point.mean, colour = Edge.angle)) +
       geom_point(size = 2) +
       theme_classic() +
@@ -106,9 +112,28 @@ p_all <- ggplot(data = TFE_mean,
       labs(colour = "edge angle") +
       ylim(25, 110) + 
       scale_colour_manual(values = c("#D67236", "#B40F20")) + 
-      scale_x_continuous(breaks = unique(TFE_mean$strokes))  
+      scale_x_continuous(breaks = unique(flint$strokes))  
 
-print(p_all)
+print(p_flint)
+
+p_lydite <- ggplot(data = lydite, 
+      aes(x = strokes, y = Three_point.mean, colour = Edge.angle)) +
+      geom_point(size = 2) +
+      theme_classic() +
+      geom_line(aes(group = ID)) +
+      facet_grid(Raw.material ~ Task) +
+      labs(x = "strokes", y = "degrees") +
+      labs(colour = "edge angle") +
+      ylim(25, 110) + 
+      scale_colour_manual(values = c("#D67236", "#B40F20")) + 
+      scale_x_continuous(breaks = unique(lydite$strokes))  
+
+print(p_lydite)
+
+ # combine both plots 
+    p_all <- p_lydite + p_flint + plot_layout(width = c(3/6, 3/6), guides = 'collect')  
+
+    print(p_all)
 
 #save to PDF
 	file_out <- paste0(basename(file_path_sans_ext(data_file)), ".pdf") 
