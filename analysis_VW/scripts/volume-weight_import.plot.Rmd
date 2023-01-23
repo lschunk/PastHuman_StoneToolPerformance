@@ -72,8 +72,8 @@ imp_data <- read.xlsx(xlsxFile = data_file, sheet = 1, startRow = 1, colNames = 
 str(imp_data)
 
 # get new order 
-imp_data$cycle <- factor(imp_data$cycle, levels=c("before", "after"))
-
+imp_data$cycle <- factor(imp_data$cycle, levels = c("before", "after"))
+imp_data$edge_angle <- factor(imp_data$edge_angle, levels = c("35", "45"))
 
 flint <- imp_data[1:24,]
 lydite <- imp_data[25:48,]
@@ -86,43 +86,135 @@ lydite <- imp_data[25:48,]
 
 
 # Data analsysis - plot 
+## Flint & lydite -  cutting 
 ```{r}
-# boxplot
-data_plot <- ggplot (flint, aes(y = volume_mm3, x = cycle)) +
-             geom_point(aes(colour = ID), size = 2) +
-             #geom_line(aes(linetype = ID), size = 1) +
-             theme_classic() + 
-             theme(legend.title = element_blank()) +
-             geom_jitter() + 
-             labs(x = "", y = "volume [mm3]", title = "") +
-             guides(fill = "none")
 
-print(data_plot)
-
- f_cutiing_v <- ggplot(data = flint[grep("cutting", flint[["motion"]]), ], 
-                       aes_string(x = "cycle", y = "volume_mm3", colour = "motion")) +
-                geom_point(size = 3) + 
-                geom_line(aes(group = ID)) + 
-                facet_wrap(ID ~ edge_angle, nrow = 2) + 
-                scale_colour_futurama() +
-                theme_classic()
+# flint 
+f_cutting_v <- ggplot(data = flint[grep("cutting", flint[["motion"]]), ], 
+                       aes_string(x = "cycle", y = "volume_mm3", label = "ID")) +
+               geom_point(size = 3, colour = "#046C9A") + 
+               geom_text(size = 3, hjust = 0.5, vjust = 1.7) +
+               geom_line(aes(group = ID), colour = "#046C9A") + 
+               theme(legend.position = "none") +
+               facet_wrap(edge_angle ~ motion) + 
+               labs(title = "flint", x = NULL, y = "volume [mm3]") +
+               theme_classic()
  
- print(f_cutiing_v)
+print(f_cutting_v)
  
- f_cutting_w <- ggplot(data = flint[grep("cutting", flint[["motion"]]), ], 
-                       aes_string(x = "cycle", y = "weight_g", colour = "motion")) +
-                geom_point(size = 3) + 
-                geom_line(aes(group = ID)) + 
-                facet_wrap(ID ~ edge_angle, nrow = 2) + 
-                scale_colour_futurama() +
-                theme_classic()
+f_cutting_w <- ggplot(data = flint[grep("cutting", flint[["motion"]]), ], 
+                       aes_string(x = "cycle", y = "weight_g", label = "ID")) +
+               geom_point(size = 3, colour = "#046C9A") + 
+               geom_text(size = 3, hjust = 0.5, vjust = 1.7) +
+               geom_line(aes(group = ID), , colour = "#046C9A") + 
+               theme(legend.position = "none") +
+               facet_wrap(edge_angle ~ motion) + 
+               labs(title = "flint", x = NULL, y = "weight [g]") +
+               theme_classic()
  
- print(f_cutting_w) 
+print(f_cutting_w) 
 
- # combine the flint and the lydite plots 
-  p <- f_cutiing_v + f_cutting_w + plot_layout(width = c(2/4, 2/4), guides = 'collect')  
+# lydite  
+l_cutting_v <- ggplot(data = lydite[grep("cutting", lydite[["motion"]]), ], 
+                       aes_string(x = "cycle", y = "volume_mm3", label = "ID")) +
+               geom_point(size = 3, colour = "#F2AD00") + 
+               geom_text(size = 3, hjust = 0.5, vjust = 1.7) +
+               geom_line(aes(group = ID), colour = "#F2AD00") + 
+               theme(legend.position = "none") +
+               facet_wrap(edge_angle ~ motion) + 
+               labs(title = "lydite", x = NULL, y = "volume [mm3]") +
+               theme_classic()
+ 
+print(l_cutting_v)
+ 
+l_cutting_w <- ggplot(data = lydite[grep("cutting", lydite[["motion"]]), ], 
+                       aes_string(x = "cycle", y = "weight_g", label = "ID")) +
+               geom_point(size = 3, colour = "#F2AD00") + 
+               geom_text(size = 3, hjust = 0.5, vjust = 1.7) +
+               geom_line(aes(group = ID), colour = "#F2AD00") + 
+               theme(legend.position = "none") +
+               facet_wrap(edge_angle ~ motion) + 
+               labs(title = "lydite", x = NULL, y = "weight [g]") +
+               theme_classic()
+ 
+print(l_cutting_w) 
+ 
 
-  print(p)
+# combine the flint and the lydite plots 
+cutting <- f_cutting_v + f_cutting_w + l_cutting_v + l_cutting_w + 
+  plot_layout(width = c(2/4, 2/4))  
+
+print(cutting)
+
+
+#save to PDF
+file_out <- paste0(basename(file_path_sans_ext(data_file)), ".pdf")
+ggsave(filename = file_out, plot = cutting, path = dir_out, device = "pdf", width = 170, height = 250, units = "mm")
+  
+```
+
+
+# Data analsysis - plot 
+## Flint & lydite -  carving 
+```{r}
+
+# flint
+f_carving_v <- ggplot(data = flint[grep("carving", flint[["motion"]]), ], 
+                       aes_string(x = "cycle", y = "volume_mm3", label = "ID")) +
+               geom_point(size = 3, colour = "#046C9A") + 
+               geom_text(size = 3, hjust = 0.5, vjust = 1.7) +
+               geom_line(aes(group = ID), colour = "#046C9A") + 
+               theme(legend.position = "none") +
+               facet_wrap(edge_angle ~ motion) + 
+               labs(title = "flint", x = NULL, y = "volume [mm3]") +
+               theme_classic()
+
+print(f_carving_v)
+
+f_carving_w <- ggplot(data = flint[grep("carving", flint[["motion"]]), ], 
+                       aes_string(x = "cycle", y = "weight_g", label = "ID")) +
+               geom_point(size = 3, colour = "#046C9A") + 
+               geom_text(size = 3, hjust = 0.5, vjust = 1.7) +
+               geom_line(aes(group = ID), , colour = "#046C9A") + 
+               theme(legend.position = "none") +
+               facet_wrap(edge_angle ~ motion) + 
+               labs(title = "flint", x = NULL, y = "weight [g]") +
+               theme_classic()
+ 
+print(f_carving_w) 
+
+ 
+# lydite  
+l_carving_v <- ggplot(data = lydite[grep("carving", lydite[["motion"]]), ], 
+                       aes_string(x = "cycle", y = "volume_mm3", label = "ID")) +
+               geom_point(size = 3, colour = "#F2AD00") + 
+               geom_text(size = 3, hjust = 0.5, vjust = 1.7) +
+               geom_line(aes(group = ID), colour = "#F2AD00") + 
+               theme(legend.position = "none") +
+               facet_wrap(edge_angle ~ motion) + 
+               labs(title = "lydite", x = NULL, y = "volume [mm3]") +
+               theme_classic()
+ 
+print(l_carving_v)
+ 
+l_carving_w <- ggplot(data = lydite[grep("carving", lydite[["motion"]]), ], 
+                       aes_string(x = "cycle", y = "weight_g", label = "ID")) +
+               geom_point(size = 3, colour = "#F2AD00") + 
+               geom_text(size = 3, hjust = 0.5, vjust = 1.7) +
+               geom_line(aes(group = ID), colour = "#F2AD00") + 
+               theme(legend.position = "none") +
+               facet_wrap(edge_angle ~ motion) + 
+               labs(title = "lydite", x = NULL, y = "weight [g]") +
+               theme_classic()
+ 
+print(l_carving_w) 
+ 
+ 
+# combine the flint and the lydite plots 
+carving <- f_carving_v + f_carving_w + l_carving_v + l_carving_w + plot_layout(width = c(3/6, 3/6), guides = 'collect')  
+
+print(carving)
+  
   
 ```
 
