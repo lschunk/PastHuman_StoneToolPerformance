@@ -78,17 +78,12 @@ imp_data$edge_angle <- factor(imp_data$edge_angle, levels = c("35", "45"))
 flint <- imp_data[1:24,]
 lydite <- imp_data[25:48,]
 
-#flint <- imp_data[1:12,]
-#lydite <- imp_data[13:24,]
-
-
 ```
 
 
 # Data analsysis - plot 
 ## Flint & lydite -  cutting 
 ```{r}
-
 # flint 
 f_cutting_v <- ggplot(data = flint[grep("cutting", flint[["motion"]]), ], 
                        aes_string(x = "cycle", y = "volume_mm3", label = "ID")) +
@@ -146,10 +141,9 @@ cutting <- f_cutting_v + f_cutting_w + l_cutting_v + l_cutting_w +
 
 print(cutting)
 
-
 #save to PDF
-file_out <- paste0(basename(file_path_sans_ext(data_file)), ".pdf")
-ggsave(filename = file_out, plot = cutting, path = dir_out, device = "pdf", width = 170, height = 250, units = "mm")
+file_out <- paste0(basename(file_path_sans_ext(data_file)), "_cutting.pdf")
+ggsave(filename = file_out, plot = cutting, path = dir_out, device = "pdf")
   
 ```
 
@@ -211,21 +205,16 @@ print(l_carving_w)
  
  
 # combine the flint and the lydite plots 
-carving <- f_carving_v + f_carving_w + l_carving_v + l_carving_w + plot_layout(width = c(3/6, 3/6), guides = 'collect')  
+carving <- f_carving_v + f_carving_w + l_carving_v + l_carving_w + plot_layout(width = c(2/4, 2/4), guides = 'collect')  
 
 print(carving)
-  
-  
-```
 
-
-# Save data
-## Define output file name
-```{r}
-file_out <- paste0(basename(file_path_sans_ext(data_file)), ".pdf")
-ggsave(filename = file_out, plot = data_plot, path = dir_out, device = "pdf")
+#save to PDF
+file_out <- paste0(basename(file_path_sans_ext(data_file)), "_carving.pdf")
+ggsave(filename = file_out, plot = carving, path = dir_out, device = "pdf")
 
 ```
+
 The files will be saved as "`r paste0("~/", dir_out, ".[ext]")`".
 
 
