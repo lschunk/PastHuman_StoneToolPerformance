@@ -151,7 +151,6 @@ ggsave(filename = file_out, plot = cutting, path = dir_out, device = "pdf")
 # Data analsysis - plot 
 ## Flint & lydite -  carving 
 ```{r}
-
 # flint
 f_carving_v <- ggplot(data = flint[grep("carving", flint[["motion"]]), ], 
                        aes_string(x = "cycle", y = "volume_mm3", label = "ID")) +
